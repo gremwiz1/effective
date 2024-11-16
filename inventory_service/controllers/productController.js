@@ -9,19 +9,26 @@ exports.createProduct = async (req, res) => {
   }
 
   try {
+
+     // Проверяем, существует ли продукт с таким PLU
+     const existingProduct = await Product.findOne({ where: { plu } });
+     if (existingProduct) {
+       return res.status(400).json({ error: `Продукт с PLU ${plu} уже существует` });
+     }
+
     const product = await Product.create({ plu, name });
 
     await axios.post('http://localhost:3002/actions', {
       product_id: product.id,
       action: 'create',
       plu: product.plu,
-      shop_id: null,
       date: new Date()
     });
 
     res.status(201).json(product);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Ошибка создания продукта:", error); 
+    res.status(400).json({ error: error.message || "Request failed with status code 400" });
   }
 };
 

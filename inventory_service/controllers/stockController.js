@@ -17,17 +17,24 @@ exports.createStock = async (req, res) => {
       in_order: in_order || 0
     });
 
+    // Получаем товар для получения его PLU
+    const product = await Product.findByPk(product_id);
+    if (!product) {
+      return res.status(404).json({ error: 'Товар не найден' });
+    }
+
     await axios.post('http://localhost:3002/actions', {
       product_id: stock.product_id,
       shop_id: stock.shop_id,
-      plu: stock.plu,
+      plu: product.plu,
       action: 'create_stock',
       date: new Date()
     });
 
     res.status(201).json(stock);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Ошибка создания остатка:", error);
+    res.status(400).json({ error: error.message || "Ошибка при создании остатка" });
   }
 };
 
@@ -35,20 +42,27 @@ exports.increaseStock = async (req, res) => {
   const { stockId, increaseOnShelf, increaseInOrder } = req.body;
 
   try {
-    const stock = await Stock.findByPk(stockId);
 
-    if (!stock) {
-      return res.status(404).json({ error: 'Stock not found' });
-    }
-
+     // Находим запись об остатке
+     const stock = await Stock.findByPk(stockId);
+     if (!stock) {
+       return res.status(404).json({ error: 'Остаток не найден' });
+     }
+     
     stock.on_shelf += increaseOnShelf || 0;
     stock.in_order += increaseInOrder || 0;
     await stock.save();
 
+    // Получаем товар для получения его PLU
+    const product = await Product.findByPk(stock.product_id);
+    if (!product) {
+      return res.status(404).json({ error: 'Товар не найден' });
+    }
+    
     await axios.post('http://localhost:3002/actions', {
       product_id: stock.product_id,
       shop_id: stock.shop_id,
-      plu: stock.plu,
+      plu: product.plu,
       action: 'increase_stock',
       date: new Date()
     });
@@ -73,10 +87,16 @@ exports.decreaseStock = async (req, res) => {
     stock.in_order = Math.max(0, stock.in_order - (decreaseInOrder || 0));
     await stock.save();
 
+    // Получаем товар для получения его PLU
+    const product = await Product.findByPk(stock.product_id);
+    if (!product) {
+      return res.status(404).json({ error: 'Товар не найден' });
+    }
+
     await axios.post('http://localhost:3002/actions', {
       product_id: stock.product_id,
       shop_id: stock.shop_id,
-      plu: stock.plu,
+      plu: product.plu,
       action: 'decrease_stock',
       date: new Date()
     });
@@ -93,7 +113,7 @@ exports.getStocks = async (req, res) => {
   try {
     const filterOptions = {
       where: {},
-      include: [{ model: Product, as: 'product', attributes: ['plu'] }]
+      include: [{ model: Product, attributes: ['plu'] }]
     };
 
     if (plu) {
@@ -112,7 +132,7 @@ exports.getStocks = async (req, res) => {
       if (in_order_min) filterOptions.where.in_order.$gte = in_order_min;
       if (in_order_max) filterOptions.where.in_order.$lte = in_order_max;
     }
-
+    
     const stocks = await Stock.findAll(filterOptions);
     res.status(200).json(stocks);
   } catch (error) {

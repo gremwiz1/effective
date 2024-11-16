@@ -5,7 +5,8 @@ export const recordAction = async (req: Request, res: Response) => {
   try {
     const action = await ActionHistory.create(req.body);
     res.status(201).json(action);
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Ошибка записи действия:", error);
     res.status(400).json({ error: error.message });
   }
 };
@@ -52,7 +53,7 @@ export const getActionHistory = async (req: Request, res: Response) => {
       currentPage: Number(page),
       data: actions.rows
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
 };

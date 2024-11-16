@@ -5,7 +5,7 @@ class ActionHistory extends Model {}
 
 ActionHistory.init({
   product_id: { type: DataTypes.INTEGER, allowNull: false },
-  shop_id: { type: DataTypes.INTEGER, allowNull: false },
+  shop_id: { type: DataTypes.INTEGER, allowNull: true },
   plu: { type: DataTypes.STRING, allowNull: false }, 
   action: { type: DataTypes.STRING, allowNull: false },
   date: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
